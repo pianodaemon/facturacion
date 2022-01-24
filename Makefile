@@ -1,7 +1,7 @@
 GOCMD=go
 GOBUILD=$(GOCMD) build -ldflags="-w -s"
 
-INTERVIEW_EXE=interview
+INTERVIEW_EXE=/interview
 
 all: build
 

@@ -1,0 +1,39 @@
+version: '3.6'
+
+x-shared-environment: &commonEnv
+    POSTGRES_USER: "postgres"
+    POSTGRES_PASSWORD: "postgres"
+    POSTGRES_HOST: "rdbms_postgres"
+    POSTGRES_PORT: 5432
+    POSTGRES_DB: "interview"
+
+services:
+    microservice:
+        container_name: 'microservice'
+        build: './'
+        ports:
+          - '10100:10100'
+        environment: *commonEnv
+        depends_on:
+          - 'rdbms_postgres'
+        networks:
+          - interview_network
+    rdbms_postgres:
+        container_name: 'rdbms_postgres'
+        image: 'debezium/postgres:13-alpine'
+        ports:
+          - '5432:5432'
+        environment: *commonEnv
+        volumes:
+          - vol_pg_data:/var/lib/postgresql/data
+        networks:
+          - interview_network
+
+networks:
+    interview_network:
+        name: interview_network
+        driver: bridge
+
+
+volumes:
+    vol_pg_data:
