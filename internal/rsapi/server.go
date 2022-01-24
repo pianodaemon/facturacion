@@ -18,11 +18,14 @@ import (
 	"github.com/urfave/negroni"
 )
 
+type ProbeHandler func() error
+
 // Configuration variables required to spin up
 // the Restful API's server
 type RestAPISettings struct {
-	Sport int   `default:"10090"`
-	Mmu   int64 `default:"41943040"`
+	Sport  int   `default:"10090"`
+	Mmu    int64 `default:"41943040"`
+	Probes []ProbeHandler
 }
 
 // Represents a runnable RESTful API
@@ -98,6 +101,13 @@ func (api *RestAPI) GetMemMapSizeUpload() int64 {
 	return api.config.Mmu
 }
 
+// Emulates Human being interruption
+func doInterruption() {
+
+	process, _ := os.FindProcess(os.Getpid())
+	process.Signal(syscall.SIGINT)
+}
+
 // Starts the RESTful API mechanism
 func (api *RestAPI) PowerOn() {
 	api.done = make(chan bool)
@@ -106,11 +116,22 @@ func (api *RestAPI) PowerOn() {
 
 	go api.shutdown()
 
+	for _, p := range api.config.Probes {
+
+		if err := p(); err != nil {
+			api.logger.Println(err)
+			doInterruption()
+			goto culminate
+		}
+	}
+
 	api.logger.Println("Server is ready to handle requests at", api.server.Addr)
 	atomic.StoreInt64(&api.Healthy, time.Now().UnixNano())
 	if err := api.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		api.logger.Fatalf("Could not listen on %s: %v\n", api.server.Addr, err)
 	}
+
+culminate:
 
 	<-api.done
 	api.logger.Println("Server stopped")

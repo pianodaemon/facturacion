@@ -35,3 +35,24 @@ func shapeConnStr() string {
 		pgSettings.Port,
 		pgSettings.Db)
 }
+
+func ProbeConn() error {
+
+	dbinfo := shapeConnStr()
+
+	db, err := sql.Open("postgres", dbinfo)
+
+	if err != nil {
+
+		return err
+	}
+
+	defer db.Close()
+
+	if err = db.Ping(); err != nil {
+
+		return err
+	}
+
+	return err
+}
