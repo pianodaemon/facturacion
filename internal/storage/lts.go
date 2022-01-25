@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -55,4 +56,34 @@ func ProbeConn() error {
 	}
 
 	return err
+}
+
+func execEntitySp(dbPtr *sql.DB, sph EntitySpHandler) (int, error) {
+
+	var lastID int
+	var rmsg string
+
+	ctx := context.Background()
+	tx, err := dbPtr.BeginTx(ctx, nil)
+	if err != nil {
+		return -1, err
+	}
+	err = sph(&ctx, dbPtr, &lastID, &rmsg)
+
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	if lastID == -1 {
+		return -1, fmt.Errorf(rmsg)
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return -1, err
+	}
+
+	return lastID, err
 }
