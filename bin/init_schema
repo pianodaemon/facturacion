@@ -1,7 +1,0 @@
-#!/bin/sh -e
-
-RDBMS_CONTAINER="rdbms_postgres"
-
-docker-compose run \
---rm -v $(pwd)/scripts:/scripts -v $(pwd)/migrations:/migrations \
-$RDBMS_CONTAINER /scripts/create_schema.sh
