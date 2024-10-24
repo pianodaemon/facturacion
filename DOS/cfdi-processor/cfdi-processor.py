@@ -1,6 +1,8 @@
 import time
 import redis
+import traceback
 import os
+import sys
 import requests
 import json
 
@@ -30,6 +32,11 @@ def connect_to_redis():
 
     connection_str = f"redis://{redis_host}:{redis_port}/0"
     return redis.StrictRedis.from_url(connection_str)
+
+
+class QueueNotFoundException(Exception):
+    """Custom exception for missing Redis queues."""
+    pass
 
 
 class RedisQueue:
@@ -68,6 +75,9 @@ class Processor:
 
     def __call__(self, interval):
         """Process messages in a loop"""
+        if not self.input_queue.is_present():
+            raise QueueNotFoundException(f"Input queue '{self.input_queue.queue_name}' does not exist yet.")
+
         while True:
             message = self.input_queue.pop()
             if message:
@@ -78,7 +88,7 @@ class Processor:
     def handle_message(message):
         """Handle processing of a message"""
         print("Processing message:", message)
-        
+
         # Parse the message, which is in JSON format (representing a Receipt object)
         receipt = json.loads(message)
 
@@ -135,5 +145,14 @@ class Processor:
             print(f"API request failed: {e}")
 
 if __name__ == "__main__":
-    processor = Processor("billingInput", "billingNotifications")
-    processor(10)
+
+    try:
+        processor = Processor("billingInput", "billingNotifications")
+        processor(10)
+    except KeyboardInterrupt:
+        print('Exiting')
+    except:
+        if debug:
+            print('Whoops! problem in processor:', file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
