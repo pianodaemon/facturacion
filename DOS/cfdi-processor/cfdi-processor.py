@@ -93,7 +93,7 @@ class Processor:
                     "ClaveProdServ": item.get("fiscal_product_id"),
                     "Cantidad": item.get("product_quantity"),
                     "ClaveUnidad": item.get("fiscal_product_unit"),
-                    "Unidad": item.get("product_desc"),
+                    "Unidad": item.get("product_unidad"),
                     "ValorUnitario": item.get("product_unit_price"),
                     "Descripcion": item.get("product_desc"),
                     "Impuestos": {
