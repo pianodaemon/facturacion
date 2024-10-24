@@ -77,61 +77,57 @@ class Processor:
         """Handle processing of a message"""
         print("Processing message:", message)
         
-        # Example: use the message to extract relevant data for the payload
-        message_data = json.loads(message)
-        
-        url = "{ HOST }/v4/cfdi40/create"
-        payload = json.dumps({
+        # Parse the message, which is in JSON format (representing a Receipt object)
+        receipt = json.loads(message)
+
+        # Construct the payload for the third-party API
+        payload = {
             "Receptor": {
-                "UID": message_data.get("UID", "6169fc02637e1")
+                "UID": receipt.get("receptor_data_ref")
             },
             "TipoDocumento": "factura",
             "Conceptos": [
                 {
-                    "ClaveProdServ": "81112101",
-                    "Cantidad": 1,
-                    "ClaveUnidad": "E48",
-                    "Unidad": "Unidad de servicio",
-                    "ValorUnitario": 229.9,
-                    "Descripcion": "Desarrollo a la medida",
+                    "ClaveProdServ": item.get("fiscal_product_id"),
+                    "Cantidad": item.get("product_quantity"),
+                    "ClaveUnidad": item.get("fiscal_product_unit"),
+                    "Unidad": item.get("product_desc"),
+                    "ValorUnitario": item.get("product_unit_price"),
+                    "Descripcion": item.get("product_desc"),
                     "Impuestos": {
                         "Traslados": [
                             {
-                                "Base": 229.9,
-                                "Impuesto": "002",
-                                "TipoFactor": "Tasa",
-                                "TasaOCuota": "0.16",
-                                "Importe": 36.784
+                                "Base": transfer.get("base"),
+                                "Impuesto": transfer.get("fiscal_type"),
+                                "TipoFactor": transfer.get("fiscal_factor"),
+                                "TasaOCuota": str(transfer.get("rate")),
+                                "Importe": transfer.get("amount")
                             }
-                        ],
-                        "Locales": [
-                            {
-                                "Base": 229.9,
-                                "Impuesto": "ISH",
-                                "TipoFactor": "Tasa",
-                                "TasaOCuota": "0.03",
-                                "Importe": 6.897
-                            }
+                            for transfer in item.get("product_transfers", [])
                         ]
                     }
                 }
+                for item in receipt.get("items", [])
             ],
-            "UsoCFDI": "P01",
-            "Serie": 17317,
-            "FormaPago": "03",
-            "MetodoPago": "PUE",
-            "Moneda": "MXN",
-            "EnviarCorreo": False
-        })
+            "UsoCFDI": receipt.get("purpose"),
+            "Serie": 17317,  # Assuming static, customize if needed
+            "FormaPago": receipt.get("payment_way"),
+            "MetodoPago": receipt.get("payment_method"),
+            "Moneda": receipt.get("document_currency"),
+            "TipoCambio": str(receipt.get("exchange_rate")),
+            "EnviarCorreo": False  # Assuming no email, customize if needed
+        }
+
         headers = {
             'Content-Type': 'application/json',
             'F-PLUGIN': '9d4095c8f7ed5785cb14c0e3b033eeb8252416ed',
-            'F-Api-Key': 'Tu API key',
-            'F-Secret-Key': 'Tu Secret key'
+            'F-Api-Key': 'Your API key',
+            'F-Secret-Key': 'Your Secret key'
         }
 
         try:
-            response = requests.post(url, headers=headers, data=payload)
+            # Replace HOST with the actual API endpoint
+            response = requests.post("{HOST}/v4/cfdi40/create", headers=headers, data=json.dumps(payload))
             print("API response:", response.text)
         except requests.exceptions.RequestException as e:
             print(f"API request failed: {e}")
