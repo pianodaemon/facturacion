@@ -1,6 +1,8 @@
 import time
 import redis
 import os
+import requests
+import json
 
 
 def redis_connected(func):
