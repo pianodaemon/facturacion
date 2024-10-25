@@ -154,7 +154,8 @@ def factura_com_dispatcher(payload):
 
 if __name__ == "__main__":
     debug = os.getenv("DEBUG", "False").lower() == "true"  # Get debug flag from environment
-
+    input_queue_name = os.getenv("INPUT_QUEUE_NAME", "billingInput")
+    notification_queue_name = os.getenv("NOTIFICATION_QUEUE_NAME", "billingNotifications")
     try:
         processor = Processor("billingInput", "billingNotifications")
         processor(factura_com_shaper, factura_com_dispatcher, 10)
